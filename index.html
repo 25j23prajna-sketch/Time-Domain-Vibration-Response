@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>AI Tutor – Vibration Analysis</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      font-family: Arial;
+      background: #0f172a;
+      color: white;
+      text-align: center;
+    }
+    canvas {
+      background: #1e293b;
+      border-radius: 10px;
+      margin: 20px auto;
+    }
+    button {
+      padding: 10px 20px;
+      margin: 10px;
+      font-size: 16px;
+      border-radius: 8px;
+      border: none;
+      background: #22c55e;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    .box {
+      max-width: 900px;
+      margin: 20px auto;
+      background: #1e293b;
+      padding: 20px;
+      border-radius: 10px;
+    }
+    input {
+      width: 80%;
+      padding: 10px;
+      border-radius: 6px;
+    }
+  </style>
+</head>
+
+<body>
+
+<h1>AI-Based Vibration Analysis Using Eigenvalues</h1>
+<p>Two-Degree-of-Freedom Spring–Mass System</p>
+
+<button onclick="startSimulation(1)">Mode 1 – In-Phase Vibration</button>
+<button onclick="startSimulation(2)">Mode 2 – Out-of-Phase Vibration</button>
+
+<!-- MATRIX + EIGENVALUE -->
+<div class="box">
+  <h2>Matrix & Eigenvalue Calculation</h2>
+  <p id="calc"></p>
+</div>
+
+<!-- AI TUTOR -->
+<div class="box">
+  <h2>AI Tutor Bot – Ask Theory Questions</h2>
+  <input id="question" placeholder="Ask about eigenvalues, matrices, vibration..." />
+  <br><br>
+  <button onclick="askTutor()">Ask AI Tutor</button>
+  <p id="answer"></p>
+</div>
+
+<!-- GRAPH -->
+<canvas id="graph" width="800" height="300"></canvas>
+
+<!-- SYSTEM ANIMATION -->
+<canvas id="system" width="800" height="160"></canvas>
+
+<script>
+/* SYSTEM PARAMETERS */
+const m1 = 1, m2 = 1;
+const k1 = 100, k2 = 100, k3 = 100;
+
+/* MATRICES */
+const M = [[m1, 0],[0, m2]];
+const K = [[k1+k2, -k2],[-k2, k2+k3]];
+
+/* EIGENVALUE FUNCTION */
+function eigenvalues2x2(A) {
+  const a = A[0][0], b = A[0][1], c = A[1][0], d = A[1][1];
+  const tr = a + d;
+  const det = a*d - b*c;
+  return [
+    (tr + Math.sqrt(tr*tr - 4*det))/2,
+    (tr - Math.sqrt(tr*tr - 4*det))/2
+  ];
+}
+
+const KM = [
+  [K[0][0]/m1, K[0][1]/m1],
+  [K[1][0]/m2, K[1][1]/m2]
+];
+
+const eig = eigenvalues2x2(KM);
+const w1 = Math.sqrt(eig[0]);
+const w2 = Math.sqrt(eig[1]);
+
+document.getElementById("calc").innerHTML =
+`Mass Matrix M = [[1,0],[0,1]]<br>
+Stiffness Matrix K = [[200,-100],[-100,200]]<br><br>
+Eigenvalues = ${eig[0].toFixed(2)}, ${eig[1].toFixed(2)}<br>
+Natural Frequencies (rad/s) = ${w1.toFixed(2)}, ${w2.toFixed(2)}`;
+
+/* GRAPH */
+let chart;
+function plot(time, disp) {
+  if(chart) chart.destroy();
+  chart = new Chart(document.getElementById("graph"), {
+    type: 'line',
+    data: {
+      labels: time,
+      datasets: [{
+        label: 'Displacement vs Time',
+        data: disp,
+        borderWidth: 2
+      }]
+    },
+    options: { animation: false }
+  });
+}
+
+/* SIMULATION */
+function startSimulation(mode) {
+  const w = mode === 1 ? w1 : w2;
+  alert(mode === 1 ?
+    "Mode 1: In-Phase Vibration" :
+    "Mode 2: Out-of-Phase Vibration");
+
+  let t = 0;
+  let time = [], disp = [];
+  const ctx = document.getElementById("system").getContext("2d");
+
+  setInterval(() => {
+    t += 0.05;
+    const x = Math.sin(w * t);
+    time.push(t.toFixed(2));
+    disp.push(x.toFixed(3));
+    if(time.length > 100) {
+      time.shift(); disp.shift();
+    }
+    plot(time, disp);
+
+    ctx.clearRect(0,0,800,160);
+    ctx.fillStyle = "white";
+    ctx.fillRect(250 + x*30, 80, 40, 40);
+    ctx.fillRect(450 - x*30, 80, 40, 40);
+    ctx.fillText("Mass 1", 250, 70);
+    ctx.fillText("Mass 2", 450, 70);
+  }, 60);
+}
+
+/* AI TUTOR */
+function askTutor() {
+  const q = document.getElementById("question").value.toLowerCase();
+  let r = "I can help with vibration, matrices, eigenvalues and modes.";
+
+  if(q.includes("eigenvalue"))
+    r = "Eigenvalues represent natural frequencies of vibration systems.";
+  else if(q.includes("eigenvector"))
+    r = "Eigenvectors describe mode shapes of vibration.";
+  else if(q.includes("matrix"))
+    r = "Matrices represent equations of motion for vibration analysis.";
+  else if(q.includes("vibration"))
+    r = "Vibration is oscillatory motion about equilibrium.";
+  else if(q.includes("mode"))
+    r = "Modes describe specific vibration patterns of a system.";
+  else if(q.includes("spring"))
+    r = "Spring–mass systems are basic vibration models.";
+
+  document.getElementById("answer").innerText = r;
+}
+</script>
+
+</body>
+</html>
